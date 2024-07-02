@@ -11,9 +11,9 @@ class AddressController {
           userId: (req as any).user.userId,
         },
       });
-      // if (!address) {
-      //   return res.status(404).json({ message: 'No address found' });
-      // }
+      if (!address) {
+        return res.status(404).json({ message: 'No address found' });
+      }
       return res.status(200).json({ data: address });
     } catch (err) {
       return res.status(500).json({ message: 'Failed to get user address' });
@@ -64,9 +64,9 @@ class AddressController {
           userId: (req as any).user.userId,
         },
       });
-      // if (!address) {
-      //   return res.status(404).json({ message: 'No address found' });
-      // }
+      if (!address) {
+        return res.status(404).json({ message: 'No address found' });
+      }
       await address.update({ country, province, district, sector, street });
       return res
         .status(200)
