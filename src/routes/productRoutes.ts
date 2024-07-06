@@ -15,6 +15,13 @@ import cloudinary from '../helps/cloudinaryConfig';
 import checkPermission from '../middleware/checkPermissionMiddleware';
 
 const router = express.Router();
+router.get('/available', ProductController.getAvailableProduct);
+router.get(
+  '/available',
+  isAuthenticated,
+  checkPermission('seller'),
+  ProductController.getAvailableProduct,
+);
 router.get(
   '/:searchKeyword',
   // isAuthenticated,
@@ -32,12 +39,7 @@ router.post(
 );
 
 router.get('/', isAuthenticated, checkPermission('admin'), getProducts);
-router.get(
-  '/available',
-  isAuthenticated,
-  checkPermission('seller'),
-  ProductController.getAvailableProduct,
-);
+
 router.get(
   '/:id',
   isAuthenticated,
@@ -45,7 +47,6 @@ router.get(
   ProductController.getSingleProduct,
 );
 
-router.get('/:productId', isAuthenticated, ProductController.getSingleProduct);
 router.put(
   '/:productId',
   isAuthenticated,

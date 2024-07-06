@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
-import { log } from 'console';
 dotenv.config();
 
 const NODE_MAILER_USER: string = process.env.NODE_MAILER_USER || '';
@@ -44,10 +43,8 @@ async function sendEmail(
 
   try {
     await transporter.sendMail(message);
-    console.log('email sent');
-    
   } catch (error) {
-    console.error('Error sending email:', error);
+    throw new Error(`Failed to send email to ${email}: ${error}`);
   }
 }
 

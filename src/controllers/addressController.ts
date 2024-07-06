@@ -1,4 +1,3 @@
-import { error } from 'console';
 import { db } from '../database/models';
 import { Request, Response } from 'express';
 import { v4 as uuidv4 } from 'uuid';
@@ -72,9 +71,7 @@ class AddressController {
         .status(200)
         .json({ message: 'Address updated', data: address });
     } catch (err) {
-      return res
-        .status(500)
-        .json({ message: 'Failed to update address', error: err });
+      return res.status(500).json({ message: 'Failed to update address' });
     }
   }
 
