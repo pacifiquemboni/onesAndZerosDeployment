@@ -34,11 +34,26 @@ interface User {
 export default class UserController {
   static async getUsers(req: Request, res: Response): Promise<Response> {
     try {
-      const users = await db.User.findAll();
-      return res.status(200).json({
-        status: 'success',
+      const page = parseInt(req.query.page as string) || 1;
+      const rowsPerPage = parseInt(req.query.rowsPerPage as string) || 10;
+      const offset = (page - 1) * rowsPerPage;
+      const users = await db.User.findAll({
+        offset: offset,
+        limit: rowsPerPage,
+      });
 
-        data: users,
+      const userCount = await db.User.count();
+
+      return res.status(200).json({
+        data: {
+          users: users,
+          pagination: {
+            currentPage: page,
+            rowsPerPage: rowsPerPage,
+            pageCount: Math.ceil(userCount / rowsPerPage),
+            totalUsers: userCount,
+          },
+        },
       });
     } catch (error) {
       return res.status(500).json({ message: 'Failed to fetch users' });
@@ -102,12 +117,10 @@ export default class UserController {
         .status(200)
         .json({ message: 'Account created!', data: newUser, token });
     } catch (error: any) {
-      console.log(error);
       return res.status(500).json({ message: 'Failed to register user' });
     }
   }
 
-  // get single profile/user controller
   static async getSingleUser(req: Request, res: Response) {
     try {
       const singleUser = await db.User.findOne({
@@ -310,19 +323,19 @@ export default class UserController {
         });
 
         // Send the email with the token
-        const name = user.name;
+        const name = user.firstName;
         await nodeMail(
           email,
           '2FA Token for One and Zero E-commerce',
-          twoFAMessageTemplate(token),
+          twoFAMessageTemplate(name, token),
         );
 
         // Send response with message to check email for the 2FA token
-        return res
-          .status(200)
-          .json({ message: 'Check your email for the 2FA token', id: user.id });
+        return res.status(200).json({
+          message: 'Check your email for the 2FA token',
+          userId: user.userId,
+        });
       } else {
-        // Generate JWT token without 2FA
         const token = generateToken(
           user.userId,
           user.email,
@@ -509,7 +522,6 @@ export default class UserController {
       });
     }
   }
-
   static async setUserRoles(req: Request, res: Response) {
     try {
       const { role } = req.body;
@@ -534,6 +546,69 @@ export default class UserController {
       return res.status(500).json({
         status: 'error',
         message: error.message,
+      });
+    }
+  }
+
+  static async getNotifications(req: any, res: Response) {
+    const { token } = req;
+
+    try {
+      const getDecodedToken = jwt.verify(token, secret);
+      const userId = getDecodedToken.userId;
+      const allNotifications = await db.Notifications.findAll({
+        where: { userId: userId },
+      });
+
+      if (!allNotifications) {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No notification found',
+        });
+      }
+
+      return res.status(200).json({
+        status: 'Success',
+        data: allNotifications,
+      });
+    } catch (e) {
+      res.status(500).json({
+        status: 'fail',
+        message: 'something went wrong: ' + e,
+      });
+    }
+  }
+  static async getSingleNotification(req: any, res: Response) {
+    const { token } = req;
+    const { notificationId } = req.body;
+
+    try {
+      const getDecodedToken = jwt.verify(token, secret);
+      const userId = getDecodedToken.userId;
+      const singleNotification = await db.Notifications.findOne({
+        where: {
+          userId: userId,
+          notificationId: notificationId,
+        },
+      });
+
+      if (singleNotification) {
+        singleNotification.isRead = true;
+        await singleNotification.save();
+        return res.status(200).json({
+          status: 'Success',
+          data: singleNotification,
+        });
+      } else {
+        return res.status(404).json({
+          status: 'fail',
+          message: 'No notification found',
+        });
+      }
+    } catch (e) {
+      res.status(500).json({
+        status: 'fail',
+        message: 'something went wrong: ' + e,
       });
     }
   }
@@ -620,6 +695,7 @@ export async function resetPassword(
     user.password = hashedPassword;
     user.resetPasswordToken = undefined;
     user.resetPasswordExpires = undefined;
+    user.passwordLastChanged = new Date();
 
     await user.save();
 

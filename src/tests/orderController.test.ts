@@ -5,6 +5,9 @@ import stripe from '../helps/stripeConfig';
 
 jest.mock('../database/models', () => ({
   db: {
+    User: {
+      findOne: jest.fn(),
+    },
     Cart: {
       findOne: jest.fn(),
       findByPk: jest.fn(),
@@ -21,7 +24,9 @@ jest.mock('../database/models', () => ({
     },
     Order: {
       findOne: jest.fn(),
+      findAll: jest.fn(),
       create: jest.fn(),
+      count: jest.fn(),
     },
     OrderProduct: {
       create: jest.fn(),
@@ -76,7 +81,7 @@ describe('OrderController', () => {
             updatedAt: '2024-05-24T10:01:46.219Z',
             CartProduct: {
               dataValues: {
-                quantity: 12,
+                quantity: 10,
               },
             },
           },
@@ -132,6 +137,8 @@ describe('OrderController', () => {
     },
     update: jest.fn(),
   };
+
+  const orders = [mockOrder, mockOrder, mockOrder];
 
   const mockOrderProduct: any = {
     dataValues: {
@@ -252,12 +259,12 @@ describe('OrderController', () => {
       });
     });
 
-    it('should return 200 when order is created', async () => {
+    it('should return 200 when order is successfully created', async () => {
       const req = {
         body: {
           addressId: mockAddress.dataValues.addressId,
           productId: mockProduct.dataValues.productId,
-          quantity: 12,
+          quantity: 10,
         },
         user: {
           userId: mockUser.userId,
@@ -279,7 +286,11 @@ describe('OrderController', () => {
       await OrderController.createOrder(req, res);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ order: mockOrder });
+      expect(res.json).toHaveBeenCalledWith({
+        order: mockOrder,
+        paymentIntent: mockPaymentIntent,
+        orderProduct: mockOrderProduct,
+      });
     });
 
     it('should return 500 when stripe error occurs', async () => {
@@ -309,6 +320,156 @@ describe('OrderController', () => {
       expect(res.status).toHaveBeenCalledWith(500);
       expect(res.json).toHaveBeenCalledWith({
         message: 'Failed to create order',
+      });
+    });
+  });
+
+  describe('getAllUserOrder', () => {
+    const page: number = 1;
+    const pageSize: number = 5;
+    const offset: number = (page - 1) * pageSize;
+    const paginatedOrders = orders.slice(offset, offset + pageSize);
+    it('should return 200 when all user orders are retrieved', async () => {
+      const req = {
+        query: {
+          page: page,
+          pageSize: pageSize,
+        },
+        params: {
+          id: mockUser.userId,
+        },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      db.User.findOne.mockReturnValue(mockUser);
+      db.Order.findAll.mockReturnValue(paginatedOrders);
+      db.Order.count.mockReturnValue(orders.length);
+      await OrderController.getAllUserOrders(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        orders: paginatedOrders,
+        pagination: {
+          currentPage: page,
+          pageSize: pageSize,
+          totalPages: Math.ceil(orders.length / pageSize),
+          totalOrders: orders.length,
+        },
+      });
+    });
+
+    it('should return 404 when user is not found', async () => {
+      const req = {
+        params: {
+          id: mockUser.userId,
+        },
+        query: {
+          page: page,
+          pageSize: pageSize,
+        },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      db.User.findOne.mockReturnValue(null);
+      await OrderController.getAllUserOrders(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'No such user found',
+      });
+    });
+
+    it('should return 500 when error occurs', async () => {
+      const req = {
+        params: {
+          id: mockUser.userId,
+        },
+        query: {
+          page: page,
+          pageSize: pageSize,
+        },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      db.User.findOne.mockReturnValue(mockUser);
+      db.Order.findAll.mockImplementation(() => {
+        throw new Error('Database Error');
+      });
+      await OrderController.getAllUserOrders(req, res);
+
+      expect(res.status).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalled();
+    });
+  });
+
+  describe('getAllOrders', () => {
+    const page: number = 1;
+    const pageSize: number = 5;
+    const offset: number = (page - 1) * pageSize;
+    const orders = [mockOrder, mockOrder, mockOrder];
+    const paginatedOrders = orders.slice(offset, offset + pageSize);
+    it('should return 200 when all orders are retrieved', async () => {
+      const req = {
+        query: {
+          page: page,
+          pageSize: pageSize,
+        },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      db.Order.findAll.mockReturnValue(paginatedOrders);
+      db.Order.count.mockReturnValue(orders.length);
+      await OrderController.getAllOrders(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        orders: paginatedOrders,
+        pagination: {
+          currentPage: page,
+          pageSize: pageSize,
+          totalPages: Math.ceil(orders.length / pageSize),
+          totalOrders: orders.length,
+        },
+      });
+    });
+
+    it('should return 500 when error occurs', async () => {
+      const req = {
+        query: {
+          page: page,
+          pageSize: 5,
+        },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      db.Order.findAll.mockImplementation(() => {
+        throw new Error('Database Error');
+      });
+      await OrderController.getAllOrders(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Failed to get all orders',
       });
     });
   });
@@ -385,6 +546,36 @@ describe('OrderController', () => {
     });
   });
 
+  describe('createOrder', () => {
+    it('should create order successfully', async () => {
+      const req = {
+        body: {
+          addressId: mockAddress.dataValues.addressId,
+          productId: mockProduct.dataValues.productId,
+          quantity: 100,
+        },
+        user: {
+          userId: mockUser.userId,
+        },
+      } as unknown as Request;
+
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn(),
+      } as unknown as Response;
+
+      db.Address.findByPk.mockReturnValue(mockAddress);
+      db.Product.findByPk.mockReturnValue(mockProduct);
+      // stripe.paymentIntents.create.mockReturnValue(mockPaymentIntent);
+      db.Order.create.mockReturnValue(mockOrder);
+      db.OrderProduct.create.mockReturnValue(mockOrderProduct);
+
+      await OrderController.createOrder(req, res);
+
+      expect(res.status).toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalled();
+    });
+  });
   describe('confirmOrderPayment', () => {
     it('should return 200 when order is retrieved', async () => {
       const req = {

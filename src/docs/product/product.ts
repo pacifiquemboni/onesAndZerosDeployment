@@ -118,6 +118,81 @@ const productPaths: OpenAPIV3.PathsObject = {
       },
     },
   },
+
+  '/api/products/mine/{id}': {
+    get: {
+      summary: 'Get all products for a user',
+      tags: ['Products'],
+      description:
+        'This endpoint retrieves all products from the database for a specific user by user ID.',
+      parameters: [
+        {
+          in: 'path',
+          name: 'id',
+          required: true,
+          schema: {
+            type: 'string',
+          },
+          description: 'ID of the user to retrieve products for',
+        },
+      ],
+      responses: {
+        '200': {
+          description: 'Successful response',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    productId: { type: 'string' },
+                    name: { type: 'string' },
+                    description: { type: 'string' },
+                    price: { type: 'number' },
+                    quantity: { type: 'number' },
+                    images: { type: 'string' },
+                    discount: { type: 'number' },
+                    expiryDate: { type: 'string' },
+                    createdAt: { type: 'string' },
+                    updatedAt: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+        '404': {
+          description: 'No products found',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+        '500': {
+          description: 'Internal server error',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' },
+                  error: { type: 'object' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+
   '/api/products': {
     post: {
       summary: 'Create a new collection',
@@ -442,6 +517,422 @@ const productPaths: OpenAPIV3.PathsObject = {
         },
         '404': {
           description: 'Product not found',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '500': {
+          description: 'Internal server error',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  '/api/products/recommend': {
+    post: {
+      summary: 'Get recommended products',
+      tags: ['Products'],
+      security: [
+        {
+          bearerAuth: [],
+        },
+      ],
+      requestBody: {
+        required: true,
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                productId: {
+                  type: 'string',
+                },
+              },
+              required: ['productId'],
+            },
+          },
+        },
+      },
+      responses: {
+        '200': {
+          description: 'Recommended products retrieved successfully',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                  products: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: {
+                          type: 'string',
+                          format: 'uuid',
+                        },
+                        name: {
+                          type: 'string',
+                        },
+                        collectionId: {
+                          type: 'string',
+                        },
+                        isAvailable: {
+                          type: 'boolean',
+                        },
+                      },
+                      required: ['id', 'name', 'collectionId', 'isAvailable'],
+                    },
+                  },
+                },
+                required: ['message', 'products'],
+              },
+            },
+          },
+        },
+        '400': {
+          description: 'Bad request',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  error: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '404': {
+          description: 'Product not found',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  error: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '500': {
+          description: 'Internal server error',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  error: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  '/api/products/collections/list': {
+    get: {
+      summary: 'Get user Collections',
+      tags: ['Collections'],
+      security: [
+        {
+          bearerAuth: [],
+        },
+      ],
+      description: 'This an end point to get user Collections',
+
+      responses: {
+        '200': {
+          description: 'Collections list retrieved successfully',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                  data: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        '400': {
+          description: 'Bad Request',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '401': {
+          description: 'Unauthorized',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '404': {
+          description: 'User not found',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '500': {
+          description: 'Internal server error',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  '/api/products/:collectionid/products': {
+    get: {
+      summary: 'Produts per Collection',
+      tags: ['Collections'],
+      security: [
+        {
+          bearerAuth: [],
+        },
+      ],
+      description: 'This an end point to get Products in a seller Collection',
+
+      parameters: [
+        {
+          in: 'path',
+          name: 'collectionid',
+          required: true,
+          schema: {
+            type: 'string',
+          },
+          description: 'The ID of the collection ',
+        },
+      ],
+      responses: {
+        '200': {
+          description: 'Products retrieved successfully',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                  data: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        '400': {
+          description: 'Bad Request',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '401': {
+          description: 'Unauthorized',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '404': {
+          description: 'User not found',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '500': {
+          description: 'Internal server error',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  },
+  '/api/products/collection/:collectionid': {
+    delete: {
+      summary: 'Delete a Collection',
+      tags: ['Collections'],
+      security: [
+        {
+          bearerAuth: [],
+        },
+      ],
+      description: 'This an end point to  delete a Collection',
+
+      parameters: [
+        {
+          in: 'path',
+          name: 'collectionid',
+          required: true,
+          schema: {
+            type: 'string',
+          },
+          description: 'The ID of the collection to delete',
+        },
+      ],
+      responses: {
+        '200': {
+          description: 'Collection deleted  successfully',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '400': {
+          description: 'Bad Request',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '401': {
+          description: 'Unauthorized',
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                properties: {
+                  message: {
+                    type: 'string',
+                  },
+                },
+              },
+            },
+          },
+        },
+        '404': {
+          description: 'User or collection not found',
           content: {
             'application/json': {
               schema: {

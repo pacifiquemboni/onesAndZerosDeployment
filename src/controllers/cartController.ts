@@ -378,6 +378,11 @@ export default class CartController {
         },
         0,
       );
+      if (total < 1000) {
+        return res
+          .status(401)
+          .json({ message: 'We do not accept order less than 1000 RWF' });
+      }
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: total,

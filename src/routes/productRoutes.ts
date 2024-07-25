@@ -3,6 +3,9 @@ import {
   createCollection,
   createProduct,
   getProducts,
+  getUserCollections,
+  getProductsPerCollection,
+  deleteCollection,
 } from '../controllers/productController';
 import upload from '../middleware/multerConfig';
 import isAuthenticated from '../middleware/isAuthMiddleware';
@@ -13,23 +16,31 @@ import authMiddleware from '../middleware/authMiddleware';
 import uploads from '../middleware/multer';
 import cloudinary from '../helps/cloudinaryConfig';
 import checkPermission from '../middleware/checkPermissionMiddleware';
-
+import productRecommend from '../controllers/productRecommend';
 const router = express.Router();
 router.get('/available', ProductController.getAvailableProduct);
+router.post('/recommend', productRecommend);
+router.get('/:id', ProductController.getSingleProduct);
+router.get('/:searchKeyword', SearchController.search, getProducts);
 router.get(
-  '/available',
+  '/mine/:id',
   isAuthenticated,
   checkPermission('seller'),
-  ProductController.getAvailableProduct,
+  ProductController.getAllFromMine,
 );
-router.get(
-  '/:searchKeyword',
-  // isAuthenticated,
-  // authMiddleware.checkRole('admin'),
-  SearchController.search,
-  getProducts,
+router.post(
+  '/remove-image',
+  isAuthenticated,
+  checkPermission('seller'),
+  ProductController.removeProductImage,
 );
 router.post('/', isAuthenticated, checkPermission('seller'), createCollection);
+router.get(
+  '/collections/list',
+  isAuthenticated,
+  checkPermission('seller'),
+  getUserCollections,
+);
 router.post(
   '/:collectionId',
   isAuthenticated,
@@ -39,13 +50,6 @@ router.post(
 );
 
 router.get('/', isAuthenticated, checkPermission('admin'), getProducts);
-
-router.get(
-  '/:id',
-  isAuthenticated,
-  checkPermission('seller'),
-  ProductController.getSingleProduct,
-);
 
 router.put(
   '/:productId',
@@ -61,12 +65,24 @@ router.patch(
   ProductController.updateProduct,
 );
 router.post(
-  '/remove-image',
+  '/:collectionId',
   isAuthenticated,
   checkPermission('seller'),
-  ProductController.removeProductImage,
+  upload.array('images'),
+  createProduct,
 );
-
 router.delete('/:id', isAuthenticated, ProductController.deleteProduct);
+router.get(
+  '/:collectionid/products',
+  isAuthenticated,
+  checkPermission('seller'),
+  getProductsPerCollection,
+);
+router.delete(
+  '/collection/:collectionid',
+  isAuthenticated,
+  checkPermission('seller'),
+  deleteCollection,
+);
 
 export default router;

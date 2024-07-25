@@ -12,7 +12,6 @@ export default class SellerController {
     try {
       const user = req.user;
 
-      // Fetch user details from the database using user.id
       const fetchedUser = await db.User.findByPk(user.userId);
       if (!fetchedUser) {
         return res.status(404).json({ message: 'User not found' });

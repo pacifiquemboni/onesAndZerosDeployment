@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Build and Release Folders
 bin-debug/
 bin-release/
@@ -36,3 +37,4 @@ coverage/
 coverage/sendgrid.env
 sendgrid.env
 .idea/
+
